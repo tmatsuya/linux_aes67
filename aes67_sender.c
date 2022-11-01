@@ -42,14 +42,13 @@ int main(int argc, char **argv) {
 	if (strstr( argv[0], "L16") > 0) {
 		format = SND_PCM_FORMAT_S16_BE;
 		pcm_byte_per_frame = 4;
-		rtp_payload_size = 972;
 		pcm_msec = 5;
 	} else {
 		format = SND_PCM_FORMAT_S24_3BE;
 		pcm_byte_per_frame = 6;
-		rtp_payload_size = 300;
 		pcm_msec = 1;
 	}
+	rtp_payload_size = pcm_byte_per_frame * 48 * pcm_msec;
 
 	if (argc != 2) {
 		fprintf( stdout, "usage: %s <IP addr:port>\n\n", argv[0] );
