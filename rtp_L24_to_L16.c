@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
 			++block_count;
 		} else {
 			recv_p += 12;	// skip RTP header
-			for (i=0; i<288; i+=3) {
+			for (i=0; i<6*48; i+=3) {
 				*send_p++ = *recv_p++;
 				*send_p++ = *recv_p++;
 				++recv_p;
