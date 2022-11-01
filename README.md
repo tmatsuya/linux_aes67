@@ -1,4 +1,4 @@
-# Linux用 AES67 Receiver & SSender
+# Linux用 AES67 Receiver & Sender
 
 ## 検証済み環境
 
