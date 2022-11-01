@@ -24,6 +24,9 @@ int cnv_pcm_L24_to_L16() {
 }
 
 
+#define	TO_L16			// L24 to L16 convert
+
+
 // AES67 L24 1ms Raw UDP Packet to L16 5ms Raw UDP
 int cnv_RTP_L24_to_L16() {
 	char recv_buf[1500], send_buf[1500], *recv_p, *send_p;
@@ -64,7 +67,11 @@ int cnv_RTP_L24_to_L16() {
 			for (i=0; i<6*48; i+=3) {
 				*send_p++ = *recv_p++;
 				*send_p++ = *recv_p++;
+#ifdef TO_L16
 				++recv_p;
+#else
+				*send_p++ = *recv_p++;
+#endif
 			}
 			++block_count;
 		} else {
@@ -72,7 +79,11 @@ int cnv_RTP_L24_to_L16() {
 			for (i=0; i<6*48; i+=3) {
 				*send_p++ = *recv_p++;
 				*send_p++ = *recv_p++;
+#ifdef TO_L16
 				++recv_p;
+#else
+				*send_p++ = *recv_p++;
+#endif
 			}
 			++block_count;
 		}
