@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <memory.h>
+#include <string.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <signal.h>
@@ -20,7 +21,8 @@ int main(int argc, char **argv) {
 	in_addr_t ipaddr2;
 
 	char ip_addr1[256], ip_addr2[256];
-	int len, i, rc, port1, port2, udp_len, interval;
+	int len, i, rc, port1, port2, udp_len;
+	int pcm_byte_per_frame, pcm_msec;
 	char recv_buf[1500], send_buf[1500], *recv_p, *send_p;
 	int block_count;
 	unsigned short seq_no;
@@ -47,10 +49,19 @@ int main(int argc, char **argv) {
 			return -1;
 		}
 		sprintf( ip_addr2, "%0d.%0d.%0d.%0d", ip[0], ip[1], ip[2], ip[3]);
-		interval = atoi( argv[3] );
+		pcm_msec = atoi( argv[3] );
 		printf("ip1=%s port1=%d,  ", ip_addr1, port1);
-		printf("ip2=%s port2=%d, interval=%dms\n", ip_addr2, port2, interval);
+		printf("ip2=%s port2=%d, interval=%dms\n", ip_addr2, port2, pcm_msec);
 	}
+
+	if (strstr( argv[0], "to_L16") > 0) {
+		pcm_byte_per_frame = 4;
+        } else {
+		pcm_byte_per_frame = 6;
+	}
+        //rtp_payload_size = pcm_byte_per_frame * 48 * pcm_msec;
+
+
 
 	// sock1: source packet
 	sock1 = socket(AF_INET, SOCK_DGRAM, 0);
@@ -115,7 +126,10 @@ int main(int argc, char **argv) {
 			for (i=0; i<6*48; i+=3) {
 				*send_p++ = *recv_p++;
 				*send_p++ = *recv_p++;
-				++recv_p;
+				if (pcm_byte_per_frame == 4)
+					++recv_p;
+				else
+					*send_p++ = *recv_p++;
 			}
 			++block_count;
 		} else {
@@ -123,11 +137,14 @@ int main(int argc, char **argv) {
 			for (i=0; i<6*48; i+=3) {
 				*send_p++ = *recv_p++;
 				*send_p++ = *recv_p++;
-				++recv_p;
+				if (pcm_byte_per_frame == 4)
+					++recv_p;
+				else
+					*send_p++ = *recv_p++;
 			}
 			++block_count;
 		}
-		if (block_count == interval) {
+		if (block_count == pcm_msec) {
 			rc = sendto(sock2, (void *)send_buf, (send_p - send_buf), 0, (struct sockaddr *)&addr2, sizeof(addr2));
 //write(1, &rc,sizeof(rc)); write(1, send_buf, rc);
 			if (rc < 0) {

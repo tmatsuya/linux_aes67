@@ -8,7 +8,7 @@ PROJECT6=aes67_sender
 all: $(PROJECT1) $(PROJECT2) $(PROJECT3) $(PROJECT4) $(PROJECT5) $(PROJECT6) $(PROJECT7)
 
 clean:
-	rm -f $(PROJECT1) $(PROJECT2) $(PROJECT3) $(PROJECT4) $(PROJECT5) $(PROJECT6) $(PROJECT7) aes67_receiver_L16 aes67_sender_L16 play16 record16 *.o
+	rm -f $(PROJECT1) $(PROJECT2) $(PROJECT3) $(PROJECT4) $(PROJECT5) $(PROJECT6) $(PROJECT7) aes67_receiver_L16 aes67_sender_L16 rtp_L24_to_L24 play16 record16 *.o
 
 $(PROJECT1): $(PROJECT1).c
 	$(CC) -O -o $(PROJECT1) $(PROJECT1).c -lasound
@@ -23,6 +23,7 @@ $(PROJECT3): $(PROJECT3).c
 
 $(PROJECT4): $(PROJECT4).c
 	$(CC) -O -o $(PROJECT4) $(PROJECT4).c
+	cp -p $(PROJECT4) rtp_L24_to_L24
 
 $(PROJECT5): $(PROJECT5).c
 	$(CC) -O -o $(PROJECT5) $(PROJECT5).c -lasound
