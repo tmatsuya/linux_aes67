@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
 				seq_no_diff -= 65536;
 			if (seq_no_diff < 0)
 				seq_no_diff += 65536;
-			if (seq_no_diff != 1 && seq_no_before != -1 || len != rtp_payload_size) {
+			if (seq_no_diff != 1 && seq_no_before != -1 || len != (rtp_payload_size+12)) {
 				fprintf(stderr, "seq_no=%d(%d), drop=%d, len=%d\n", seq_no, seq_no_before, (seq_no_diff-1), len);
 			}
 			seq_no_before = seq_no;
