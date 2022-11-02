@@ -12,26 +12,31 @@ clean:
 
 $(PROJECT1): $(PROJECT1).c
 	$(CC) -O -o $(PROJECT1) $(PROJECT1).c -lasound
-	cp -p $(PROJECT1) $(PROJECT1)_L16
+	rm -f $(PROJECT1)_L16
+	ln $(PROJECT1) $(PROJECT1)_L16
 
 $(PROJECT2): $(PROJECT2).c
 	$(CC) -O -o $(PROJECT2) $(PROJECT2).c -lasound
-	cp -p $(PROJECT2) play16
+	rm -f play16
+	ln $(PROJECT2) play16
 
 $(PROJECT3): $(PROJECT3).c
 	$(CC) -O -o $(PROJECT3) $(PROJECT3).c -lrt
 
 $(PROJECT4): $(PROJECT4).c
 	$(CC) -O -o $(PROJECT4) $(PROJECT4).c
-	cp -p $(PROJECT4) rtp_L24_to_L24
+	rm -f rtp_L24_to_L24
+	ln $(PROJECT4) rtp_L24_to_L24
 
 $(PROJECT5): $(PROJECT5).c
 	$(CC) -O -o $(PROJECT5) $(PROJECT5).c -lasound
-	cp -p $(PROJECT5) record16
+	rm -f record16
+	ln $(PROJECT5) record16
 
 $(PROJECT6): $(PROJECT6).c
 	$(CC) -O -o $(PROJECT6) $(PROJECT6).c -lasound
-	cp -p $(PROJECT6) $(PROJECT6)_L16
+	rm -f $(PROJECT6)_L16
+	ln $(PROJECT6) $(PROJECT6)_L16
 
 
 .PHONY: clean
