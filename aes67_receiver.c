@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 	int cur_block = 0;
 	snd_pcm_t *pcm;
 	int pcm_msec;		// 1 or 5 msec interval
-	int rtp_payload_size;	// 300 (L24 1ms) or 972 (L16 5ms)
+	int rtp_payload_size;	// 204 (L16 1ms) or 300 (L24 1ms) or 972 (L16 5ms) or 1452 (L24 5ms)
 	int pcm_byte_per_frame;	// 6 (L24) or 4 (L16)
 	char device[] = "default";				// default
 	//char device[] = "sysdefault:CARD=vc4hdmi";		// pizero HDMI audio
