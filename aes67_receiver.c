@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-
+	shutdown(sock, 0);
 	close(sock);
 	snd_pcm_close( pcm );
 
