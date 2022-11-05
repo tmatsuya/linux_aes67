@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 		for (i=0; i<pcm_byte_per_frame*48*pcm_msec*PCM_BLOCK_MAX; ++i)
 			send_buf[i+12]= pcm_buf[i];
 
-		len = rtp_payload_size;
+		len = rtp_payload_size + 12;
 		rc = sendto(sock, send_buf, len, 0, (struct sockaddr *)&addr, sizeof(addr));
 		if (rc == len) {
 			++seq_no;
