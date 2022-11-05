@@ -12,8 +12,6 @@ clean:
 
 $(PROJECT1): $(PROJECT1).c
 	$(CC) -O -o $(PROJECT1) $(PROJECT1).c -lasound
-	rm -f $(PROJECT1)_L16
-	ln $(PROJECT1) $(PROJECT1)_L16
 
 $(PROJECT2): $(PROJECT2).c
 	$(CC) -O -o $(PROJECT2) $(PROJECT2).c -lasound
