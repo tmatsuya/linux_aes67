@@ -11,13 +11,13 @@
 	sudo apt-get install libasound2 libasound2-dev
 
 
-## 制限事項(2022/11/1 18:30現在)
+## 制限事項(2022/11/6 22:00現在)
 
- 3-1. 24Bit 1ms単位、16Bit 5ms単位のみ
+ 3-1. 16/24Bit 1/5ms単位対応
 
  3-2 音声入出力対応
 
- 3-3 SDP、PTP未対応
+ 3-3 SDPは出力のみ対応、PTP未対応
 
 
 ## コンパイルと実行方法
