@@ -32,7 +32,7 @@ $(PROJECT5): $(PROJECT5).c
 	ln $(PROJECT5) record16
 
 $(PROJECT6): $(PROJECT6).c
-	$(CC) -O -o $(PROJECT6) $(PROJECT6).c -lasound
+	$(CC) -O -o $(PROJECT6) $(PROJECT6).c -lasound -lpthread
 	rm -f $(PROJECT6)_L16
 	ln $(PROJECT6) $(PROJECT6)_L16
 
