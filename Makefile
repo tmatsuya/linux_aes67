@@ -19,7 +19,7 @@ $(PROJECT2): $(PROJECT2).c
 	ln $(PROJECT2) play16
 
 $(PROJECT3): $(PROJECT3).c
-	$(CC) -O -o $(PROJECT3) $(PROJECT3).c -lrt
+	$(CC) -O -o $(PROJECT3) $(PROJECT3).c -lrt -lpthread
 
 $(PROJECT4): $(PROJECT4).c
 	$(CC) -O -o $(PROJECT4) $(PROJECT4).c
