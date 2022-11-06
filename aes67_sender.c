@@ -5,13 +5,62 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <alsa/asoundlib.h>
 
 #define PCM_BLOCK_MAX	1
 
+char ip_addr[256];
+int port;
+
+void *manage() {
+	int sock, len, sdp_len, i, rc;
+	struct sockaddr_in addr;
+	char send_buf[512], sdp_buf[512];
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(9875);				// AES67 SAP/SDP(9875)
+	addr.sin_addr.s_addr = inet_addr("239.255.255.255");	// AES67 SAP/SDP(9875)
+
+	bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+
+	/* setsockoptは、bind以降で行う必要あり */
+	//memset(&mreq, 0, sizeof(mreq));
+	//mreq.imr_interface.s_addr = INADDR_ANY;
+	//mreq.imr_multiaddr.s_addr = inet_addr(ip_addr);
+	//mreq.imr_multiaddr.s_addr = inet_addr("224.0.1.129");	// PTP:319
+	//mreq.imr_multiaddr.s_addr = inet_addr("239.69.83.133");	// AES67 AVIO-USB(5004)
+	//mreq.imr_multiaddr.s_addr = inet_addr("239.1.3.139");	// AES67 Ravenna(5004)
+	//mreq.imr_multiaddr.s_addr = inet_addr("224.0.0.251");	// MDNS:5353
+	//mreq.imr_multiaddr.s_addr = inet_addr("239.255.0.1");	  // recpt1:1234
+	//if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq)) != 0) {
+	//	perror("setsockopt");
+	//	return 1;
+	//}
+
+	send_buf[0] = 0x20;	// Flags
+	send_buf[1] = 0x00;	// Authenticattion Length
+	send_buf[2] = 0x12;	// Message Identifier Hash
+	send_buf[3] = 0x34;	// Message Identifier Hash
+	strncpy( &send_buf[8], "application/sdp\0", 16);
+	sprintf(sdp_buf, "v=0\r\ns=Keio\r\nc=IN IP4 %s/32\r\nm=audio%d RTP/AVP 97\r\na=rtpmap:97 L24/48000/2\r\n", ip_addr, port);
+	sdp_len = strlen( sdp_buf );
+	strcpy( &send_buf[24], sdp_buf);
+
+	while (1) {
+		rc = sendto(sock, send_buf, 24 + sdp_len, 0, (struct sockaddr *)&addr, sizeof(addr));
+		sleep(30);
+	}
+
+	close(sock);
+
+}
+
+
 int main(int argc, char **argv) {
-	char ip_addr[256];
-	int sock, len, i, rc, port;
+	int sock, len, i, rc;
 	int seq_no, seq_no_diff;
 	static int seq_no_before = -1;
 	struct sockaddr_in addr;
@@ -38,6 +87,7 @@ int main(int argc, char **argv) {
 	unsigned int soft_resample = 1;
 	// 100ミリ秒分ALSAのバッファに蓄える
 	unsigned int latency = 100*1000;
+	pthread_t thread_manage;
 
 	if (strstr( argv[0], "L16") > 0) {
 		format = SND_PCM_FORMAT_S16_BE;
@@ -108,6 +158,9 @@ int main(int argc, char **argv) {
 	memset(pcm_buf, 0, pcm_byte_per_frame*48*pcm_msec*PCM_BLOCK_MAX);
 	memset(send_buf, 0, sizeof(send_buf));
 	seq_no = 0;
+
+	pthread_create(&thread_manage, NULL, (void *)manage, (void *)NULL);
+
 
 	while (1) {
 		rc = snd_pcm_readi ( pcm, ( void * )pcm_buf, 48*pcm_msec*PCM_BLOCK_MAX );
