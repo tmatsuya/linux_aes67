@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
 					   format = SND_PCM_FORMAT_S16_BE; break;
 				case 1452: pcm_byte_per_frame = 6; pcm_msec = 5;  // L24 5ms
 					   format = SND_PCM_FORMAT_S24_3BE; break;
+				default: printf("Invalid UDP len (%d)\n", len); continue;
 			}
 			rtp_payload_size = len; //pcm_byte_per_frame * 48 * pcm_msec;
 
