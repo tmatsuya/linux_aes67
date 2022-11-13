@@ -1,17 +1,58 @@
 #include <stdio.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 #include <memory.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <net/if.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <alsa/asoundlib.h>
 
+
 #define PCM_BLOCK_MAX	1
 
 char ip_addr[256];
+char if_name[16], if_addr[16];
 int port;
+
+/* 10個以上インターフェースがある場合は増やしてください */
+#define MAX_IFR 10
+
+void get_nic_ifname(char *if_name) {
+    struct ifreq ifr[MAX_IFR];
+    struct ifconf ifc;
+    int fd;
+    int nifs, i;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    /* データを受け取る部分の長さ */
+    ifc.ifc_len = sizeof(ifr);
+
+    /* kernelからデータを受け取る部分を指定 */
+    ifc.ifc_ifcu.ifcu_buf = (void *)ifr;
+
+    ioctl(fd, SIOCGIFCONF, &ifc);
+
+    /* kernelから帰ってきた数を計算 */
+    nifs = ifc.ifc_len / sizeof(struct ifreq);
+
+    /* 全てのインターフェース名を表示 */
+    for (i=0; i<nifs; i++) {
+//        printf("%s\n", ifr[i].ifr_name);
+        if (strcmp(ifr[i].ifr_name, "lo")) {
+            strcpy(if_name, ifr[i].ifr_name);
+            break;
+        }
+    }
+
+    close(fd);
+
+    return;
+}
 
 void *manage() {
 	int sock, len, sdp_len, i, rc;
@@ -45,7 +86,7 @@ void *manage() {
 	send_buf[2] = 0x12;	// Message Identifier Hash
 	send_buf[3] = 0x34;	// Message Identifier Hash
 	strncpy( &send_buf[8], "application/sdp\0", 16);
-	sprintf(sdp_buf, "v=0\r\ns=Keio\r\nc=IN IP4 %s/32\r\nm=audio%d RTP/AVP 97\r\na=rtpmap:97 L24/48000/2\r\n", ip_addr, port);
+	sprintf(sdp_buf, "v=0\r\no=- 1 0 IN IP4 %s\r\ns=Keio\r\nc=IN IP4 %s/32\r\nm=audio%d RTP/AVP 97\r\na=rtpmap:97 L24/48000/2\r\n", if_addr, ip_addr, port);
 	sdp_len = strlen( sdp_buf );
 	strcpy( &send_buf[24], sdp_buf);
 
@@ -64,6 +105,7 @@ int main(int argc, char **argv) {
 	int seq_no, seq_no_diff;
 	static int seq_no_before = -1;
 	struct sockaddr_in addr;
+        struct ifreq ifr;
 	struct ip_mreq mreq;
 	unsigned char send_buf[1500], *pcm_buf;
 	int cur_block = 0;
@@ -116,6 +158,9 @@ int main(int argc, char **argv) {
 //		printf("ip=%s port=%d\n", ip_addr, port);
 	}
 
+	// NIC I/F名を取得
+	get_nic_ifname(if_name);
+
 
 	if ( (pcm_buf = malloc(pcm_byte_per_frame*48*pcm_msec*PCM_BLOCK_MAX)) == NULL ) {
 		fprintf( stderr, "malloc failed\n" );
@@ -137,6 +182,14 @@ int main(int argc, char **argv) {
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = inet_addr(ip_addr);
+
+        /* IPv4のIPアドレスを取得したい */
+        ifr.ifr_addr.sa_family = AF_INET;
+        /* eth0のIPアドレスを取得したい */
+        strcpy(ifr.ifr_name, if_name);
+        ioctl(sock, SIOCGIFADDR, &ifr);
+	strcpy(if_addr, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+//printf("I/F=%s\n", if_addr);
 
 	bind(sock, (struct sockaddr *)&addr, sizeof(addr));
 
@@ -196,3 +249,4 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
+
