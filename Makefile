@@ -4,6 +4,7 @@ PROJECT3=rtp_packet_generator
 PROJECT4=rtp_L24_to_L16
 PROJECT5=record24
 PROJECT6=aes67_sender
+PROJECT7=rtp_multi_to_uni
 
 all: $(PROJECT1) $(PROJECT2) $(PROJECT3) $(PROJECT4) $(PROJECT5) $(PROJECT6) $(PROJECT7)
 
@@ -36,5 +37,7 @@ $(PROJECT6): $(PROJECT6).c
 	rm -f $(PROJECT6)_L16
 	ln $(PROJECT6) $(PROJECT6)_L16
 
+$(PROJECT7): $(PROJECT7).c
+	$(CC) -O -o $(PROJECT7) $(PROJECT7).c
 
 .PHONY: clean
