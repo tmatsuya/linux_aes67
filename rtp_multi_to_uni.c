@@ -24,10 +24,10 @@ int main(int argc, char **argv) {
 	struct sockaddr_in addr3;
 	in_addr_t ipaddr3;
 
+	fd_set fds, readfds;
 	char ip_addr1[256], ip_addr2[256], ip_addr3[256];
 	int len, i, rc, port1, port2, port3, udp_len;
 	char recv_buf[1500];
-	unsigned short seq_no;
 	int do_flag = 1;
 
 
@@ -41,19 +41,19 @@ int main(int argc, char **argv) {
 		int ip[4];
 		rc = sscanf( argv[1], "%d.%d.%d.%d:%d", &ip[0], &ip[1], &ip[2], &ip[3] , &port1 );
 		if (rc != 5) {
-			fprintf( stderr, "Invalid parameter\n" );
+			fprintf( stderr, "Invalid parameter1\n" );
 			return -1;
 		}
 		sprintf( ip_addr1, "%0d.%0d.%0d.%0d", ip[0], ip[1], ip[2], ip[3]);
 		rc = sscanf( argv[2], "%d.%d.%d.%d:%d", &ip[0], &ip[1], &ip[2], &ip[3] , &port2 );
 		if (rc != 5) {
-			fprintf( stderr, "Invalid parameter\n" );
+			fprintf( stderr, "Invalid parameter2\n" );
 			return -1;
 		}
 		sprintf( ip_addr2, "%0d.%0d.%0d.%0d", ip[0], ip[1], ip[2], ip[3]);
 		rc = sscanf( argv[3], "%d.%d.%d.%d:%d", &ip[0], &ip[1], &ip[2], &ip[3] , &port3 );
 		if (rc != 5) {
-			fprintf( stderr, "Invalid parameter\n" );
+			fprintf( stderr, "Invalid parameter3\n" );
 			return -1;
 		}
 		sprintf( ip_addr3, "%0d.%0d.%0d.%0d", ip[0], ip[1], ip[2], ip[3]);
@@ -82,12 +82,18 @@ int main(int argc, char **argv) {
 		perror("setsockopt");
 		return 1;
 	}
+	// sock3: destination packet	
+	sock2 = socket(AF_INET, SOCK_DGRAM, 0);
+
+	addr2.sin_family = AF_INET;
+	addr2.sin_port = htons(port2);
+	addr2.sin_addr.s_addr = inet_addr(ip_addr2);
 
 	// sock3: destination packet	
 	sock3 = socket(AF_INET, SOCK_DGRAM, 0);
 
 	addr3.sin_family = AF_INET;
-	addr3.sin_port = htons(port2);
+	addr3.sin_port = htons(port3);
 	addr3.sin_addr.s_addr = inet_addr(ip_addr3);
 
 	/* setsockoptは、bind以降で行う必要あり */
@@ -100,19 +106,47 @@ int main(int argc, char **argv) {
 	//}
 
 
+	FD_ZERO(&readfds);
+	FD_SET(sock1, &readfds);
+	FD_SET(sock2, &readfds);
+
 	do_flag = 1;
 
 	while (do_flag) {
-		rc = recv(sock1, recv_buf, sizeof(recv_buf), 0);
-		if (rc < 0) {
-			perror("recv");
-			do_flag = 0;
+		memcpy(&fds, &readfds, sizeof(fd_set));
+
+		select(sock2+1, &fds, NULL, NULL, NULL);
+
+		if (FD_ISSET(sock1, &fds)) {
+			rc = recv(sock1, recv_buf, sizeof(recv_buf), 0);
+printf("recv(sock1)=%d\n",rc);
+			if (rc < 0) {
+				perror("recv");
+				do_flag = 0;
+			}
+			rc = sendto(sock2, (void *)recv_buf, rc, 0, (struct sockaddr *)&addr2, sizeof(addr2));
+			if (rc < 0) {
+				perror("sendto");
+				do_flag = 0;
+			}
 		}
-		rc = sendto(sock3, (void *)recv_buf, rc, 0, (struct sockaddr *)&addr3, sizeof(addr3));
-		if (rc < 0) {
-			perror("sendto");
-			do_flag = 0;
+
+	
+		if (FD_ISSET(sock2, &fds)) {
+			rc = recv(sock2, recv_buf, sizeof(recv_buf), 0);
+printf("recv(sock2)=%d\n",rc);
+			if (rc < 0) {
+				perror("recv");
+				do_flag = 0;
+			}
+			rc = sendto(sock3, (void *)recv_buf, rc, 0, (struct sockaddr *)&addr3, sizeof(addr3));
+			if (rc < 0) {
+				perror("sendto");
+				do_flag = 0;
+			}
 		}
+
+	
 	}
 
 	close(sock1);

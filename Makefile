@@ -5,11 +5,12 @@ PROJECT4=rtp_L24_to_L16
 PROJECT5=record24
 PROJECT6=aes67_sender
 PROJECT7=rtp_multi_to_uni
+PROJECT8=dsp_server
 
-all: $(PROJECT1) $(PROJECT2) $(PROJECT3) $(PROJECT4) $(PROJECT5) $(PROJECT6) $(PROJECT7)
+all: $(PROJECT1) $(PROJECT2) $(PROJECT3) $(PROJECT4) $(PROJECT5) $(PROJECT6) $(PROJECT7) $(PROJECT8)
 
 clean:
-	rm -f $(PROJECT1) $(PROJECT2) $(PROJECT3) $(PROJECT4) $(PROJECT5) $(PROJECT6) $(PROJECT7) aes67_receiver_L16 aes67_sender_L16 rtp_L24_to_L24 play16 record16 *.o
+	rm -f $(PROJECT1) $(PROJECT2) $(PROJECT3) $(PROJECT4) $(PROJECT5) $(PROJECT6) $(PROJECT7) $(PROJECT8) aes67_receiver_L16 aes67_sender_L16 rtp_L24_to_L24 play16 record16 *.o
 
 $(PROJECT1): $(PROJECT1).c
 	$(CC) -O -o $(PROJECT1) $(PROJECT1).c -lasound
@@ -39,5 +40,8 @@ $(PROJECT6): $(PROJECT6).c
 
 $(PROJECT7): $(PROJECT7).c
 	$(CC) -O -o $(PROJECT7) $(PROJECT7).c
+
+$(PROJECT8): $(PROJECT8).c
+	$(CC) -O -o $(PROJECT8) $(PROJECT8).c
 
 .PHONY: clean
