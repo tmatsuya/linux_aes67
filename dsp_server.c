@@ -28,9 +28,6 @@ int main(int argc, char **argv) {
 	int pcm_byte_per_frame, pcm_msec;
 	int rtp_payload_size;
 
-	int left, right;
-
-
 	if (argc != 2) {
 		fprintf( stdout, "usage: %s port\n\n", argv[0] );
 		fprintf( stdout, " example: %s 5004\n", argv[0]); 
@@ -57,8 +54,8 @@ int main(int argc, char **argv) {
 	do_flag = 1;
 
 	while (do_flag) {
-		char *ptr;
-		int left;
+		unsigned char *ptr;
+		int nokori;
 		memcpy(&fds, &readfds, sizeof(fd_set));
 
 		select(sock1 + 1, &fds, NULL, NULL, NULL);
@@ -67,7 +64,7 @@ int main(int argc, char **argv) {
 		if (FD_ISSET(sock1, &fds)) {
 			addrlen = sizeof(addr);
 			rc = recvfrom(sock1, recv_buf, sizeof(recv_buf), 0, (struct sockaddr *)&addr, &addrlen);
-printf("recv()=%d\n", rc);
+//printf("recv()=%d\n", rc);
 			if (rc < 0) {
 				perror("recv");
 				do_flag = 0;
@@ -83,13 +80,14 @@ printf("recv()=%d\n", rc);
 			}
 			rtp_payload_size = rc; //pcm_byte_per_frame * 48 * pcm_msec;
 
-			left = rc;
+			nokori = rc;
 			if (pcm_byte_per_frame == 4) {
-				for ( left = rtp_payload_size - 12, ptr = recv_buf + 12; left > 0; left -= pcm_byte_per_frame, ptr+= pcm_byte_per_frame) {
-					left  = *(ptr+0) << 8 | *(ptr+1);
-					right = *(ptr+2) << 8 | *(ptr+3);
-					left  = left  >> 4;
-					right = right >> 4;
+				short left, right;
+				for ( nokori = rtp_payload_size - 12, ptr = recv_buf + 12; nokori > 0; nokori -= pcm_byte_per_frame, ptr+= pcm_byte_per_frame) {
+					left  = (*(ptr+0) << 8) | *(ptr+1);
+					right = (*(ptr+2) << 8) | *(ptr+3);
+					left  = left / 8;
+					right = right / 8;
 					*(ptr+0) = left >> 8;
 					*(ptr+1) = left & 0xff;
 					*(ptr+2) = right >> 8;
@@ -97,8 +95,24 @@ printf("recv()=%d\n", rc);
 				}
 			}
 
+			if (pcm_byte_per_frame == 6) {
+				int left, right;
+				for ( nokori = rtp_payload_size - 12, ptr = recv_buf + 12; nokori > 0; nokori -= pcm_byte_per_frame, ptr+= pcm_byte_per_frame) {
+					left  = (*(ptr+0) << 16) | (*(ptr+1) << 8) | *(ptr+2);
+					right = (*(ptr+3) << 16) | (*(ptr+4) << 8) | *(ptr+5);
+					//left  = left / 8;
+					//right = right / 8;
+					*(ptr+0) =  left  >> 16;
+					*(ptr+1) = (left  >> 8) & 0xff;
+					*(ptr+2) =  left  & 0xff;
+					*(ptr+3) =  right >> 16;
+					*(ptr+4) = (right >> 8) & 0xff;
+					*(ptr+5) =  right & 0xff;
+				}
+			}
+
 			rc = sendto(sock1, (void *)recv_buf, rc, 0, (struct sockaddr *)&addr, sizeof(addr));
-printf("sendto()=%d\n", rc);
+//printf("sendto()=%d\n", rc);
 			if (rc < 0) {
 				perror("sendto");
 				do_flag = 0;
