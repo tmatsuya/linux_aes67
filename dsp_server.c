@@ -100,8 +100,13 @@ int main(int argc, char **argv) {
 				for ( nokori = rtp_payload_size - 12, ptr = recv_buf + 12; nokori > 0; nokori -= pcm_byte_per_frame, ptr+= pcm_byte_per_frame) {
 					left  = (*(ptr+0) << 16) | (*(ptr+1) << 8) | *(ptr+2);
 					right = (*(ptr+3) << 16) | (*(ptr+4) << 8) | *(ptr+5);
-					//left  = left / 8;
-					//right = right / 8;
+					// 24bit signed to 32bit signed
+					if (left & 0x800000)
+						left |= 0xff000000;
+					if (right & 0x800000)
+						right |= 0xff000000;
+					left  = left / 8;
+					right = right / 8;
 					*(ptr+0) =  left  >> 16;
 					*(ptr+1) = (left  >> 8) & 0xff;
 					*(ptr+2) =  left  & 0xff;
