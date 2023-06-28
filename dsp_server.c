@@ -25,6 +25,10 @@ int main(int argc, char **argv) {
 	char recv_buf[1500];
 	int do_flag = 1;
 
+	int pcm_byte_per_frame, pcm_msec;
+	int rtp_payload_size;
+
+	int left, right;
 
 
 	if (argc != 2) {
@@ -53,6 +57,8 @@ int main(int argc, char **argv) {
 	do_flag = 1;
 
 	while (do_flag) {
+		char *ptr;
+		int left;
 		memcpy(&fds, &readfds, sizeof(fd_set));
 
 		select(sock1 + 1, &fds, NULL, NULL, NULL);
@@ -65,7 +71,32 @@ printf("recv()=%d\n", rc);
 			if (rc < 0) {
 				perror("recv");
 				do_flag = 0;
+				break;
 			}
+
+			switch (rc) {
+				case 204:  pcm_byte_per_frame = 4; pcm_msec = 1; break; // L16 1ms
+				case 300:  pcm_byte_per_frame = 6; pcm_msec = 1; break; // L24 1ms
+				case 972:  pcm_byte_per_frame = 4; pcm_msec = 5; break; // L16 5ms
+				case 1452: pcm_byte_per_frame = 6; pcm_msec = 5; break; // L24 5ms
+				default: printf("Invalid UDP len (%d)\n", len); continue;
+			}
+			rtp_payload_size = rc; //pcm_byte_per_frame * 48 * pcm_msec;
+
+			left = rc;
+			if (pcm_byte_per_frame == 4) {
+				for ( left = rtp_payload_size - 12, ptr = recv_buf + 12; left > 0; left -= pcm_byte_per_frame, ptr+= pcm_byte_per_frame) {
+					left  = *(ptr+0) << 8 | *(ptr+1);
+					right = *(ptr+2) << 8 | *(ptr+3);
+					left  = left  >> 4;
+					right = right >> 4;
+					*(ptr+0) = left >> 8;
+					*(ptr+1) = left & 0xff;
+					*(ptr+2) = right >> 8;
+					*(ptr+3) = right & 0xff;
+				}
+			}
+
 			rc = sendto(sock1, (void *)recv_buf, rc, 0, (struct sockaddr *)&addr, sizeof(addr));
 printf("sendto()=%d\n", rc);
 			if (rc < 0) {
