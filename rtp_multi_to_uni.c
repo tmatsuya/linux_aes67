@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
 
 		if (FD_ISSET(sock1, &fds)) {
 			rc = recv(sock1, recv_buf, sizeof(recv_buf), 0);
-printf("recv(sock1)=%d\n",rc);
+//printf("recv(sock1)=%d\n",rc);
 			if (rc < 0) {
 				perror("recv");
 				do_flag = 0;
@@ -134,7 +134,7 @@ printf("recv(sock1)=%d\n",rc);
 	
 		if (FD_ISSET(sock2, &fds)) {
 			rc = recv(sock2, recv_buf, sizeof(recv_buf), 0);
-printf("recv(sock2)=%d\n",rc);
+//printf("recv(sock2)=%d\n",rc);
 			if (rc < 0) {
 				perror("recv");
 				do_flag = 0;
