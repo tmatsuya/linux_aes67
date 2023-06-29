@@ -39,7 +39,7 @@ $(PROJECT6): $(PROJECT6).c
 	ln $(PROJECT6) $(PROJECT6)_L16
 
 $(PROJECT7): $(PROJECT7).c
-	$(CC) -O -o $(PROJECT7) $(PROJECT7).c
+	$(CC) -O -o $(PROJECT7) $(PROJECT7).c -lpthread
 
 $(PROJECT8): $(PROJECT8).c
 	$(CC) -O -o $(PROJECT8) $(PROJECT8).c
