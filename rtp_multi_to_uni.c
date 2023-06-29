@@ -1,14 +1,104 @@
 #include <stdio.h>
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 #include <memory.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <net/if.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
 #include <alsa/asoundlib.h>
+
+
+char ip_addr[256];
+char if_name[16], if_addr[16];
+int port;
+
+/* 10個以上インターフェースがある場合は増やしてください */
+#define MAX_IFR 10
+
+void get_nic_ifname(char *if_name) {
+    struct ifreq ifr[MAX_IFR];
+    struct ifconf ifc;
+    int fd;
+    int nifs, i;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    /* データを受け取る部分の長さ */
+    ifc.ifc_len = sizeof(ifr);
+
+    /* kernelからデータを受け取る部分を指定 */
+    ifc.ifc_ifcu.ifcu_buf = (void *)ifr;
+
+    ioctl(fd, SIOCGIFCONF, &ifc);
+
+    /* kernelから帰ってきた数を計算 */
+    nifs = ifc.ifc_len / sizeof(struct ifreq);
+
+    /* 全てのインターフェース名を表示 */
+    for (i=0; i<nifs; i++) {
+//        printf("%s\n", ifr[i].ifr_name);
+        if (strcmp(ifr[i].ifr_name, "lo")) {
+            strcpy(if_name, ifr[i].ifr_name);
+            break;
+        }
+    }
+
+    close(fd);
+
+    return;
+}
+
+void *manage() {
+        int sock, len, sdp_len, i, rc;
+        struct sockaddr_in addr;
+        char send_buf[512], sdp_buf[512];
+
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(9875);                            // AES67 SAP/SDP(9875)
+        addr.sin_addr.s_addr = inet_addr("239.255.255.255");    // AES67 SAP/SDP(9875)
+
+        bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+
+        /* setsockoptは、bind以降で行う必要あり */
+        //memset(&mreq, 0, sizeof(mreq));
+        //mreq.imr_interface.s_addr = INADDR_ANY;
+        //mreq.imr_multiaddr.s_addr = inet_addr(ip_addr);
+        //mreq.imr_multiaddr.s_addr = inet_addr("224.0.1.129"); // PTP:319
+        //mreq.imr_multiaddr.s_addr = inet_addr("239.69.83.133");       // AES67 AVIO-USB(5004)
+        //mreq.imr_multiaddr.s_addr = inet_addr("239.1.3.139"); // AES67 Ravenna(5004)
+        //mreq.imr_multiaddr.s_addr = inet_addr("224.0.0.251"); // MDNS:5353
+        //mreq.imr_multiaddr.s_addr = inet_addr("239.255.0.1");   // recpt1:1234
+        //if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq)) != 0) {
+        //      perror("setsockopt");
+        //      return 1;
+        //}
+
+        send_buf[0] = 0x20;     // Flags
+        send_buf[1] = 0x00;     // Authenticattion Length
+        send_buf[2] = 0x12;     // Message Identifier Hash
+        send_buf[3] = 0x34;     // Message Identifier Hash
+        strncpy( &send_buf[8], "application/sdp\0", 16);
+        sprintf(sdp_buf, "v=0\r\no=- 1 0 IN IP4 %s\r\ns=Keio\r\nc=IN IP4 %s/32\r\nm=audio%d RTP/AVP 97\r\na=rtpmap: 97 L24/48000/2\r\n", if_addr, ip_addr, port);
+        sdp_len = strlen( sdp_buf );
+        strcpy( &send_buf[24], sdp_buf);
+
+        while (1) {
+                rc = sendto(sock, send_buf, 24 + sdp_len, 0, (struct sockaddr *)&addr, sizeof(addr));
+//                sleep(30);
+                sleep(5);
+        }
+
+        close(sock);
+
+}
 
 
 int main(int argc, char **argv) {
@@ -25,10 +115,13 @@ int main(int argc, char **argv) {
 	in_addr_t ipaddr3;
 
 	fd_set fds, readfds;
+        struct ifreq ifr;
+
 	char ip_addr1[256], ip_addr2[256], ip_addr3[256];
 	int len, i, rc, port1, port2, port3, udp_len;
 	char recv_buf[1500];
 	int do_flag = 1;
+        pthread_t thread_manage;
 
 
 
@@ -105,6 +198,22 @@ int main(int argc, char **argv) {
 	//	return 1;
 	//}
 
+
+        // NIC I/F名を取得
+        get_nic_ifname(if_name);
+
+        /* IPv4のIPアドレスを取得したい */
+        ifr.ifr_addr.sa_family = AF_INET;
+        /* eth0のIPアドレスを取得したい */
+        strcpy(ifr.ifr_name, if_name);
+        ioctl(sock1, SIOCGIFADDR, &ifr);
+        strcpy(if_addr, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+printf("I/F=%s\n", if_addr);
+
+	strcpy(ip_addr, ip_addr3);
+	port = port3;
+
+        pthread_create(&thread_manage, NULL, (void *)manage, (void *)NULL);
 
 	FD_ZERO(&readfds);
 	FD_SET(sock1, &readfds);

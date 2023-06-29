@@ -92,7 +92,8 @@ void *manage() {
 
 	while (1) {
 		rc = sendto(sock, send_buf, 24 + sdp_len, 0, (struct sockaddr *)&addr, sizeof(addr));
-		sleep(30);
+//		sleep(30);
+		sleep(5);
 	}
 
 	close(sock);
