@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 
 	fd_set fds, readfds;
 	char ip_addr1[256], ip_addr2[256], ip_addr3[256];
-	int len, i, rc, port1, port2, port3, udp_len;
+	int reclen, i, rc, port1, port2, port3, udp_len;
 	char recv_buf[1500];
 	int do_flag = 1;
 
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
 
 		if (FD_ISSET(sock1, &fds)) {
 			addrlen = sizeof(addr);
-			rc = recvfrom(sock1, recv_buf, sizeof(recv_buf), 0, (struct sockaddr *)&addr, &addrlen);
+			rc = reclen = recvfrom(sock1, recv_buf, sizeof(recv_buf), 0, (struct sockaddr *)&addr, &addrlen);
 //printf("recv()=%d\n", rc);
 			if (rc < 0) {
 				perror("recv");
@@ -82,16 +82,16 @@ int main(int argc, char **argv) {
 				break;
 			}
 
-			switch (rc) {
+			switch (reclen) {
 				case 204:  pcm_byte_per_frame = 4; pcm_msec = 1; break; // L16 1ms
 				case 300:  pcm_byte_per_frame = 6; pcm_msec = 1; break; // L24 1ms
 				case 972:  pcm_byte_per_frame = 4; pcm_msec = 5; break; // L16 5ms
 				case 1452: pcm_byte_per_frame = 6; pcm_msec = 5; break; // L24 5ms
-				default: printf("Invalid UDP len (%d)\n", len); continue;
+				default: printf("Invalid UDP len (%d)\n", reclen); continue;
 			}
-			rtp_payload_size = rc; //pcm_byte_per_frame * 48 * pcm_msec;
+			rtp_payload_size = reclen; //pcm_byte_per_frame * 48 * pcm_msec;
 
-			nokori = rc;
+			nokori = reclen;
 			if (pcm_byte_per_frame == 4) {
 				int left, right, p1, p2, p3, p4, p5, p6;
 				for ( nokori = rtp_payload_size - 12, ptr = recv_buf + 12; nokori > 0; nokori -= pcm_byte_per_frame, ptr+= pcm_byte_per_frame) {
