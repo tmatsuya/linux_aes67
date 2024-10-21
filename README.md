@@ -15,6 +15,12 @@
 	sudo apt-get install libasound2 libasound2-dev
 ```
 
+ 2-2. Ubuntu 24 ARM
+
+```
+    sudo apt-get install libgtk2.0-0t64 libgtk-3-0t64 libgbm-dev libnotify-dev libnss3 libxss1 libasound2t64 libxtst6 xauth xvfb libasound2-dev
+```
+
 
 ## 制限事項(2023/06/29 2:04現在)
 
