@@ -2,13 +2,18 @@
 
 ## 検証済み環境
 
- 1-1. Raspberry Pi 4 / Zero W
+ 1-1. Raspberry Pi 4/5/Zero W
 
- 1-2.  Linux Ubuntu 20
+ 1-2.  Linux Ubuntu 20/22
 
 
 ## 必要ソフトウェア環境
+
+ 2-1. Ubuntu 20/22/Raspberry Pi 4/5/Zero W
+
+```
 	sudo apt-get install libasound2 libasound2-dev
+```
 
 
 ## 制限事項(2023/06/29 2:04現在)
@@ -43,6 +48,25 @@ ESPS32上でAES67を再生待機すると音が再生されます
 ```
  make
  ./rtp_packet_generator 239.69.83.134:5004 AES67_L24_1ms_sample.packet 5 &
+```
+
+
+ 再生
+
+```
+ ./demo_play
+```
+
+ DSPサーバを用いたディレイ・エコー処理
+
+```
+ ./demo_dsp
+```
+
+ 複数チャンネルのミキシング処理
+
+```
+ ./demo_mix
 ```
 
 
@@ -104,6 +128,7 @@ arecord -L
   6-9.  record24                AES67/L24をALSAで録音する デバッグ用に作ったもの
   6-10. rtp_multi_to_uni        AES67マルチキャストをユニキャストとして受信、DSPサーバに処理してもらいその結果を別アドレスのマルチキャストで送信する
   6-11. dsp_server              音声信号処理を行うサーバ。AES67ユニキャストを受信し信号処理(ディレイ・エコー)をしたのちリアルタイムで返信する
+  6-12. mix_server              音声信号処理を行うサーバ。複数のAES67ユニキャストを受信しミキシング信号処理をしたのちリアルタイムで返信する
 ```
 
 
@@ -135,6 +160,9 @@ arecord -L
        ./rtp_multi_to_uni 239.69.83.134:5004 8.8.8.8:5004 239.69.83.134:5005
 
   DSPサーバをポート番号５００４で待機する
+       ./dsp_server 5004
+
+  ミシン具サーバをポート番号５００４で待機する
        ./dsp_server 5004
 ```
 
