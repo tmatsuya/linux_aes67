@@ -254,9 +254,9 @@ transmit:
 							}
 						}
 					}
-					// Done and inactie
-					client_info[client_no].recv_buffer[recv_buffer_oldest_no].active = 0;
 				}
+				// Done and inactie
+				client_info[client_no].recv_buffer[recv_buffer_oldest_no].active = 0;
 
 			}
 		}
