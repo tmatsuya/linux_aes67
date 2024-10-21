@@ -64,8 +64,8 @@ int main(int argc, char **argv) {
 
 	// initialize RTDSC information
 	rtdsc_cycle_per_sec = get_rtdsc_cycle_per_sec();
-	//time_per_sec = rtdsc_cycle_per_sec / 5000;
-	time_per_sec = rtdsc_cycle_per_sec;
+	time_per_sec = rtdsc_cycle_per_sec / 200;
+	//time_per_sec = rtdsc_cycle_per_sec;
 	printf("RTDSC Clock=%dMHz (%d)\n", (rtdsc_cycle_per_sec / 1000000), rtdsc_cycle_per_sec);
 
 	// Initialize Client buffer
@@ -199,7 +199,7 @@ transmit:
 			// need processing ?
 		        if (client_info[client_no].active == 1) {
 				// session timeout ? (over (RECV_BUFFER_MAX * 20) (1sec) ?)
-				if ((client_info[client_no].last_recv_time / time_per_sec) < (time_now - (RECV_BUFFER_MAX * 20))); {
+				if ((client_info[client_no].last_recv_time / time_per_sec) < (time_now - (RECV_BUFFER_MAX * 20))) {
 					// disconnect session
 					client_info[client_no].active = 0;
 					continue;
@@ -212,7 +212,7 @@ transmit:
 					// active packet ?
 					if (client_info[client_no].recv_buffer[recv_buffer_no].active == 1) {
 						// timeout packet ? (over RECV_BUFFER_MAX) (50ms))
-						if ((client_info[client_no].recv_buffer[recv_buffer_no].last_recv_time / time_per_sec) < (time_now - (RECV_BUFFER_MAX * 1))); {
+						if ((client_info[client_no].recv_buffer[recv_buffer_no].last_recv_time / time_per_sec) < (time_now - (RECV_BUFFER_MAX * 1))) {
 							// inactive packet
 							client_info[client_no].recv_buffer[recv_buffer_no].active = 0;
 							continue;
@@ -258,7 +258,6 @@ transmit:
 						*(ptr+1) = mixed_left & 0xff;
 						*(ptr+2) = mixed_right >> 8;
 						*(ptr+3) = mixed_right & 0xff;
-
 					}
 					// Done and inactie
 					client_info[client_no].recv_buffer[recv_buffer_oldest_no].active = 0;
@@ -283,6 +282,8 @@ transmit:
 				}
 			}
 		}
+
+		++seq_no;
 
 //		printf("time=%lld\n", time_now);
 
