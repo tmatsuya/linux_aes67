@@ -10,7 +10,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <alsa/asoundlib.h>
-#include "rtdsc.h"
+#include "rdtsc.h"
 
 #define	CLIENT_MAX	(16)
 #define	RECV_BUFFER_MAX	(10)
@@ -46,7 +46,8 @@ int main(int argc, char **argv) {
 	char recv_buf[1500], send_buf[1500];
 	int do_flag = 1;
 	unsigned int client_ipv4addr, client_port;
-	int rtdsc_cycle_per_sec, time_per_sec;
+	unsigned long long rdtsc_cycle_per_sec;
+	int time_per_sec;
 	int pcm_byte_per_frame, pcm_msec;
 	int rtp_payload_size;
 	unsigned long long rdtsc_now;
@@ -63,10 +64,10 @@ int main(int argc, char **argv) {
 	}
 
 	// initialize RTDSC information
-	rtdsc_cycle_per_sec = get_rtdsc_cycle_per_sec();
-	time_per_sec = rtdsc_cycle_per_sec / 200;
-	//time_per_sec = rtdsc_cycle_per_sec;
-	printf("RTDSC Clock=%dMHz (%d)\n", (rtdsc_cycle_per_sec / 1000000), rtdsc_cycle_per_sec);
+	rdtsc_cycle_per_sec = get_rdtsc_cycle_per_sec();
+	time_per_sec = rdtsc_cycle_per_sec / 200;
+	//time_per_sec = rdtsc_cycle_per_sec;
+	printf("RTDSC Clock=%lldMHz (%lld)\n", (rdtsc_cycle_per_sec / 1000000), rdtsc_cycle_per_sec);
 
 	// Initialize Client buffer
 	for (client_no=0; client_no<CLIENT_MAX; ++client_no) {
