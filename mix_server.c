@@ -247,7 +247,7 @@ transmit:
 					for (i = 0; i<CLIENT_MAX; ++i) {
 						// Mixing except for myself
 		        			if ( i != client_no && client_info[i].active == 1) {
-							for ( nokori = rtp_payload_size - 12, ptr = (short int *)(client_info[i].send_buffer + 12), ptr2 = (short int *)client_info[client_no].recv_buffer[recv_buffer_oldest_no].pcm_data; nokori > 0; nokori -= (pcm_byte_per_frame/2), ptr+= (pcm_byte_per_frame/2), ptr2+=(pcm_byte_per_frame/2)) {
+							for ( nokori = rtp_payload_size - 12, ptr = (short int *)(client_info[i].send_buffer + 12), ptr2 = (short int *)client_info[client_no].recv_buffer[recv_buffer_oldest_no].pcm_data; nokori > 0; nokori -= pcm_byte_per_frame, ptr+= (pcm_byte_per_frame/2), ptr2+=(pcm_byte_per_frame/2)) {
 								// store mixing data to send buffer
 								*(ptr+0) += *(ptr2+0);
 								*(ptr+1) += *(ptr2+1);
