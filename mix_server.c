@@ -28,13 +28,27 @@ struct _client_info {
 	unsigned int   ipv4addr;
 	int active;
 	unsigned long long last_recv_time;
+	int seq_no;
 	struct _recv_buffer recv_buffer[RECV_BUFFER_MAX];
+	unsigned char send_buffer[12+2*48*2*5];		// RTP Header + 16Bit * 48Khz * Stereo * 5ms
 } client_info[CLIENT_MAX];
 	
 
 int	history_left [SAMPLE_RATE];
 int	history_right[SAMPLE_RATE];
 int	history_bottom;
+
+void swap_byte_order_16( void *dst, const void *src, size_t len) {
+	unsigned short *p1 = (unsigned short *)dst;
+	unsigned short *p2 = (unsigned short *)src;
+	unsigned short data;
+
+	for ( ; len > 0; --len) {
+		data = *p2++;
+		data = (data << 8) | ((data & 0xff00) >> 8);
+		*p1++ = data;
+	}
+}
 
 int main(int argc, char **argv) {
 	int sock1;
@@ -53,7 +67,6 @@ int main(int argc, char **argv) {
 	unsigned long long rdtsc_now;
 	unsigned long long time_now, time_before, time_valid_oldest;
 	int recv_buffer_oldest_no;
-	int seq_no;
 
 	if (argc != 2) {
 		fprintf( stdout, "usage: %s port\n\n", argv[0] );
@@ -102,7 +115,6 @@ int main(int argc, char **argv) {
 
 	do_flag = 1;
 	time_before = 0;
-	seq_no = 0;
 
 	while (do_flag) {
 		unsigned char *ptr;
@@ -152,7 +164,7 @@ int main(int argc, char **argv) {
 						// store AES67 data to empty recv buffer
 						client_info[client_no].recv_buffer[recv_buffer_no].active = 1;
 						client_info[client_no].recv_buffer[recv_buffer_no].last_recv_time = rdtsc_now;
-						memcpy(client_info[client_no].recv_buffer[recv_buffer_no].pcm_data, recv_buf + 12,  rtp_payload_size - 12);
+						swap_byte_order_16(client_info[client_no].recv_buffer[recv_buffer_no].pcm_data, recv_buf + 12,  (rtp_payload_size - 12)/2);
 						goto transmit;
 					}
 				}
@@ -171,6 +183,7 @@ int main(int argc, char **argv) {
 				client_info[client_no].last_recv_time = rdtsc_now;
 				client_info[client_no].ipv4addr = client_ipv4addr;
 			   	client_info[client_no].port = client_port;
+				client_info[client_no].seq_no = 0;
 				// Inirialize recv buffer
 				for (recv_buffer_no=0; recv_buffer_no<RECV_BUFFER_MAX; ++recv_buffer_no) {
 					client_info[client_no].recv_buffer[recv_buffer_no].active = 0;
@@ -178,7 +191,7 @@ int main(int argc, char **argv) {
 				// store AES67 data to recv buffer #0
 				client_info[client_no].recv_buffer[0].active = 1;
 				client_info[client_no].recv_buffer[0].last_recv_time = rdtsc_now;
-				memcpy(client_info[client_no].recv_buffer[0].pcm_data, recv_buf + 12,  rtp_payload_size - 12);
+				swap_byte_order_16(client_info[client_no].recv_buffer[0].pcm_data, recv_buf + 12,  (rtp_payload_size - 12)/2);
 				goto transmit;
 			}
 
@@ -191,11 +204,10 @@ transmit:
 			continue;
 
 		// clear transmit AES67 data
-		for (i=0; i<rtp_payload_size; ++i) {
-			send_buf[i] = 0;
-		}
+		for (client_no=0; client_no<CLIENT_MAX; ++client_no)
+			bzero( client_info[client_no].send_buffer, rtp_payload_size);
 
-		// 
+		// calculating mixed data
 		for (client_no=0; client_no<CLIENT_MAX; ++client_no) {
 			// need processing ?
 		        if (client_info[client_no].active == 1) {
@@ -229,62 +241,46 @@ transmit:
 
 				// mixing process
 				if (time_valid_oldest != 0xffffffffffffffffLL) {
-					int mixed_left, mixed_right, left, right, nokori;
-					unsigned char *ptr, *ptr2;
-					for ( nokori = rtp_payload_size - 12, ptr = send_buf + 12, ptr2 = client_info[client_no].recv_buffer[recv_buffer_oldest_no].pcm_data; nokori > 0; nokori -= pcm_byte_per_frame, ptr+= pcm_byte_per_frame, ptr2+=pcm_byte_per_frame) {
-						// get mixed data
-						mixed_left  = (*(ptr+0) << 8) | *(ptr+1);
-						mixed_right = (*(ptr+2) << 8) | *(ptr+3);
-						// 16bit signed to 32bit signed
-						if (mixed_left & 0x8000)
-							mixed_left  |= 0xffff0000;
-						if (mixed_right & 0x8000)
-							mixed_right |= 0xffff0000;
-
-						// get current client data
-						left  = (*(ptr2+0) << 8) | *(ptr2+1);
-						right = (*(ptr2+2) << 8) | *(ptr2+3);
-						// 16bit signed to 32bit signed
-						if (left & 0x8000)
-							left  |= 0xffff0000;
-						if (right & 0x8000)
-							right |= 0xffff0000;
-
-						// mixing
-						mixed_left += left;
-						mixed_right += right;
-
-						// store mixing data to send buffer
-						*(ptr+0) = mixed_left >> 8;
-						*(ptr+1) = mixed_left & 0xff;
-						*(ptr+2) = mixed_right >> 8;
-						*(ptr+3) = mixed_right & 0xff;
+					short int mixed_left, mixed_right, left, right;
+					int nokori;
+					short int *ptr, *ptr2;
+					for (i = 0; i<CLIENT_MAX; ++i) {
+						// Mixing except for myself
+		        			if ( i != client_no && client_info[i].active == 1) {
+							for ( nokori = rtp_payload_size - 12, ptr = (short int *)(client_info[i].send_buffer + 12), ptr2 = (short int *)client_info[client_no].recv_buffer[recv_buffer_oldest_no].pcm_data; nokori > 0; nokori -= (pcm_byte_per_frame/2), ptr+= (pcm_byte_per_frame/2), ptr2+=(pcm_byte_per_frame/2)) {
+								// store mixing data to send buffer
+								*(ptr+0) += *(ptr2+0);
+								*(ptr+1) += *(ptr2+1);
+							}
+						}
 					}
 					// Done and inactie
 					client_info[client_no].recv_buffer[recv_buffer_oldest_no].active = 0;
-
 				}
 
 			}
 		}
 
-		// RTP header
-		send_buf[2] = (seq_no & 0xff00) >> 8;
-		send_buf[3] = (seq_no & 0xff);
 
 		for (client_no=0; client_no<CLIENT_MAX; ++client_no) {
 			// need sending ?
 		        if (client_info[client_no].active == 1) {
+				// RTP header
+				client_info[client_no].send_buffer[2] = (client_info[client_no].seq_no & 0xff00) >> 8;
+				client_info[client_no].send_buffer[3] = (client_info[client_no].seq_no & 0xff);
+				// swap byte order
+				swap_byte_order_16(client_info[client_no].send_buffer+12, client_info[client_no].send_buffer+12, (rtp_payload_size - 12)/2);
+
 				// send AES67 packet
-				rc = sendto(sock1, (void *)send_buf, rtp_payload_size, 0, (struct sockaddr *) &client_info[client_no].sockaddr, sizeof(sockaddr));
+				rc = sendto(sock1, (void *)client_info[client_no].send_buffer, rtp_payload_size, 0, (struct sockaddr *) &client_info[client_no].sockaddr, sizeof(sockaddr));
 				if (rc < 0) {
 					perror("sendto");
 					do_flag = 0;
 				}
+				++client_info[client_no].seq_no;
 			}
 		}
 
-		++seq_no;
 
 //		printf("time=%lld\n", time_now);
 
