@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 		// receive processing
 		client_ipv4addr = htonl(*(unsigned int *)&sockaddr.__ss_padding[2]);
 		client_port = htons(*(unsigned short *)&sockaddr.__ss_padding[0]);
-		printf("%08X:%d\n", client_ipv4addr, client_port);
+//		printf("%08X:%d\n", client_ipv4addr, client_port);
 
 		switch (reclen) {
 //			case 204:  pcm_byte_per_frame = 4; pcm_msec = 1; break; // L16 1ms
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
 			    client_info[client_no].port == client_port &&
 		        	client_info[client_no].active == 1) {
 				// found client session
-printf("Exist client session #%d\n", client_no);
+//printf("Exist client session #%d\n", client_no);
 				client_info[client_no].last_recv_time = rdtsc_now;
 				for (recv_buffer_no=0; recv_buffer_no<RECV_BUFFER_MAX; ++recv_buffer_no) {
 					if (client_info[client_no].recv_buffer[recv_buffer_no].active == 0) {
@@ -164,7 +164,7 @@ printf("Exist client session #%d\n", client_no);
 		for (client_no=0; client_no<CLIENT_MAX; ++client_no) {
 			// found empty client ssession
 		        if (client_info[client_no].active == 0) {
-printf("New client session #%d\n", client_no);
+//printf("New client session #%d\n", client_no);
 				client_info[client_no].active = 1;
 				client_info[client_no].sockaddr = sockaddr;
 				client_info[client_no].last_recv_time = rdtsc_now;
