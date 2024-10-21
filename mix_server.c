@@ -19,7 +19,7 @@
 struct _recv_buffer {
 	int active;
 	unsigned long long last_recv_time;
-	unsigned char pcm_data[2*48*2*5];		// 16Bit * 48Khz * Stereo * 5ms
+	unsigned char pcm_data[3000];
 };
 
 struct _client_info {
@@ -30,7 +30,7 @@ struct _client_info {
 	unsigned long long last_recv_time;
 	int seq_no;
 	struct _recv_buffer recv_buffer[RECV_BUFFER_MAX];
-	unsigned char send_buffer[12+2*48*2*5];		// RTP Header + 16Bit * 48Khz * Stereo * 5ms
+	unsigned char send_buffer[3000];
 } client_info[CLIENT_MAX];
 	
 
@@ -43,7 +43,7 @@ void swap_byte_order_16( void *dst, const void *src, size_t len) {
 	unsigned short *p2 = (unsigned short *)src;
 	unsigned short data;
 
-	for ( ; len > 0; --len) {
+	for ( ; len > 0; len -= 2) {
 		data = *p2++;
 		data = (data << 8) | ((data & 0xff00) >> 8);
 		*p1++ = data;
@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
 						// store AES67 data to empty recv buffer
 						client_info[client_no].recv_buffer[recv_buffer_no].active = 1;
 						client_info[client_no].recv_buffer[recv_buffer_no].last_recv_time = rdtsc_now;
-						swap_byte_order_16(client_info[client_no].recv_buffer[recv_buffer_no].pcm_data, recv_buf + 12,  (rtp_payload_size - 12)/2);
+						swap_byte_order_16(client_info[client_no].recv_buffer[recv_buffer_no].pcm_data, recv_buf + 12,  (rtp_payload_size - 12));
 						goto transmit;
 					}
 				}
@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
 				// store AES67 data to recv buffer #0
 				client_info[client_no].recv_buffer[0].active = 1;
 				client_info[client_no].recv_buffer[0].last_recv_time = rdtsc_now;
-				swap_byte_order_16(client_info[client_no].recv_buffer[0].pcm_data, recv_buf + 12,  (rtp_payload_size - 12)/2);
+				swap_byte_order_16(client_info[client_no].recv_buffer[0].pcm_data, recv_buf + 12,  (rtp_payload_size - 12));
 				goto transmit;
 			}
 
@@ -269,7 +269,7 @@ transmit:
 				client_info[client_no].send_buffer[2] = (client_info[client_no].seq_no & 0xff00) >> 8;
 				client_info[client_no].send_buffer[3] = (client_info[client_no].seq_no & 0xff);
 				// swap byte order
-				swap_byte_order_16(client_info[client_no].send_buffer+12, client_info[client_no].send_buffer+12, (rtp_payload_size - 12)/2);
+				swap_byte_order_16(client_info[client_no].send_buffer+12, client_info[client_no].send_buffer+12, (rtp_payload_size - 12));
 
 				// send AES67 packet
 				rc = sendto(sock1, (void *)client_info[client_no].send_buffer, rtp_payload_size, 0, (struct sockaddr *) &client_info[client_no].sockaddr, sizeof(sockaddr));
