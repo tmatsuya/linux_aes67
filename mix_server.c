@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 	struct ip_mreq mreq;
 	char ip_addr1[256], ip_addr2[256], ip_addr3[256];
 	int reclen, i, j, client_no, recv_buffer_no, rc, port1, port2, port3, udp_len;
-	char recv_buf[1500];
+	char recv_buf[1500], send_buf[1500];
 	int do_flag = 1;
 	unsigned int client_addr, client_port;
 	int rtdsc_cycle_per_sec, time_per_sec;
@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
 		}
 		rtp_payload_size = reclen; //pcm_byte_per_frame * 48 * pcm_msec;
 
-		// Initialize Client buffer
+		// exist client session ?
 		for (client_no=0; client_no<CLIENT_MAX; ++client_no) {
 			if (client_info[client_no].addr == client_addr && 
 			    client_info[client_no].port == client_port &&
@@ -145,19 +145,21 @@ printf("Exist client session #%d\n", client_no);
 				client_info[client_no].last_recv_time = rdtsc_now;
 				for (recv_buffer_no=0; recv_buffer_no<RECV_BUFFER_MAX; ++recv_buffer_no) {
 					if (client_info[client_no].recv_buffer[recv_buffer_no].active == 0) {
-						// found empty recv buffer
+						// store AES67 data to empty recv buffer
 						client_info[client_no].recv_buffer[recv_buffer_no].active = 1;
 						client_info[client_no].recv_buffer[recv_buffer_no].last_recv_time = rdtsc_now;
 						memcpy(client_info[client_no].recv_buffer[recv_buffer_no].pcm_data, recv_buf + 12,  rtp_payload_size - 12);
+						goto transmit;
 					}
 				}
+				// not found empty recv buffer
 				goto transmit;
 			}
 		}
 
 		// new client session
 		for (client_no=0; client_no<CLIENT_MAX; ++client_no) {
-			// found empty ssession
+			// found empty client ssession
 		        if (client_info[client_no].active == 0) {
 printf("New client session #%d\n", client_no);
 				client_info[client_no].active = 1;
@@ -177,14 +179,13 @@ printf("New client session #%d\n", client_no);
 
 		}
 
-		rc = sendto(sock1, (void *)recv_buf, reclen, 0, (struct sockaddr *)&addr, sizeof(addr));
-
 
 transmit:
 		// Has 5 msec passed ?
 		if ( time_now == time_before)
 			continue;
 
+		//rc = sendto(sock1, (void *)recv_buf, reclen, 0, (struct sockaddr *)&addr, sizeof(addr));
 		printf("time=%lld\n", time_now);
 
 		time_before = time_now;
