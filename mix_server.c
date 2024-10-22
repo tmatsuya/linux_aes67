@@ -240,7 +240,7 @@ transmit:
 				}
 
 				// mixing process
-				if (time_valid_oldest != 0xffffffffffffffffLL) {
+				if (time_valid_oldest != 0xffffffffffffffffLL && ((time_valid_oldest / time_per_sec) <= (time_now-(RECV_BUFFER_MAX/2)))) {
 					short int mixed_left, mixed_right, left, right;
 					int nokori;
 					short int *ptr, *ptr2;
@@ -254,9 +254,9 @@ transmit:
 							}
 						}
 					}
+					// Done and inactie
+					client_info[client_no].recv_buffer[recv_buffer_oldest_no].active = 0;
 				}
-				// Done and inactie
-				client_info[client_no].recv_buffer[recv_buffer_oldest_no].active = 0;
 
 			}
 		}
