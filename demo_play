@@ -1,9 +1,12 @@
 #!/bin/bash
-
-killall rtp_packet_generator rtp_multi_to_uni dsp_server mix_server aes67_receiver
+killall aes67_sender_L16 rtp_packet_generator rtp_multi_to_uni dsp_server mix_server aes67_receiver >/dev/null 2>/dev/null
 
 echo sleep 1
 sleep 1
 
 ./rtp_packet_generator 239.69.83.133:5004 AES67_L24_5ms_sample.packet 5 &
+pid1=$!
+
+trap "kill -9 $pid1; exit" SIGINT 
+
 ./aes67_receiver 239.69.83.133:5004
