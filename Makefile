@@ -5,9 +5,9 @@ PROJECT4=rtp_L24_to_L16
 PROJECT5=record24
 PROJECT6=aes67_sender
 PROJECT7=rtp_multi_to_uni
-PROJECT8=dsp_server
-PROJECT9=mix_server
-PROJECT10=mcastjoin
+PROJECT8=mcastjoin
+PROJECT9=dsp_server
+PROJECT10=mix_server
 
 all: $(PROJECT1) $(PROJECT2) $(PROJECT3) $(PROJECT4) $(PROJECT5) $(PROJECT6) $(PROJECT7) $(PROJECT8) $(PROJECT9) $(PROJECT10)
 
